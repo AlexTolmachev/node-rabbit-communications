@@ -1,11 +1,11 @@
 {
   "name": "rabbit-communications",
   "version": "0.0.1",
-  "description": "Configure two-way communication between microservices via RabbitMQ \uD83D\uDCE5 \uD83D\uDCE4",
+  "description": "Configure two-way communication between microservices via RabbitMQ 📥 📤",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "echo \"no tests\"",
+    "test": "mocha --exit",
     "eslint": "eslint src",
     "eslint:fix": "eslint src"
   },
@@ -31,8 +31,13 @@
   },
   "homepage": "https://github.com/AlexTolmachev/node-rabbit-communications#readme",
   "devDependencies": {
+    "chai": "^4.2.0",
     "eslint": "5.13.0",
     "eslint-config-airbnb-base": "13.1.0",
-    "eslint-plugin-import": "2.16.0"
+    "eslint-plugin-import": "2.16.0",
+    "mocha": "^6.1.4"
+  },
+  "dependencies": {
+    "rabbit-client": "^1.1.2"
   }
 }
