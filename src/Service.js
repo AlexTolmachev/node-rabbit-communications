@@ -42,8 +42,8 @@ module.exports = class Service {
     this.isOutputEnabled = isOutputEnabled;
     this.outputMessageTtl = outputMessageTtl;
 
-    this.inputQueueName = `${this.name}:input`;
-    this.outputQueueName = `${this.name}:output`;
+    this.inputQueueName = `${namespace}:${this.name}:input`;
+    this.outputQueueName = `${namespace}:${this.name}:output`;
   }
 
   addInputListener(fn) {
@@ -94,8 +94,6 @@ module.exports = class Service {
           });
 
           await channel.bindQueue(this.inputQueueName, this.namespace, this.inputQueueName);
-
-          // await channel.prefetch(this.rabbitOptions.prefetch); TODO: get prefetch from RabbitClient instance?
 
           await channel.consume(this.inputQueueName, async (msg, ch, data) => {
             try {
