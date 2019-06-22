@@ -1,2 +1,10 @@
 extends: airbnb-base
-rules: {}
+rules:
+  no-console: off
+globals:
+  before: true
+  after:  true
+  beforeEach: true
+  afterEach: true
+  describe: true
+  it: true
