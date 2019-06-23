@@ -159,7 +159,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       rabbitClient,
     });
 
-    const messagesToSend = [{ test: 1 }, { test: 2 }, { test: 3 }];
+    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
 
     service.addInputListener((data) => {
@@ -194,7 +194,53 @@ describe('Service (allows to exchange messages with it in both directions)', () 
   });
 
   it('sends messages to output queue', async () => {
+    const service = new Service({
+      name: 'service-5-output-only',
+      isOutputEnabled: true,
+      isInputEnabled: false,
+      namespace: NAMESPACE,
+      rabbitClient,
+    });
 
+    const { outputQueueName } = service;
+
+    await service.start();
+
+    createdQueues.push(outputQueueName);
+
+    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const receivedMessages = [];
+
+    await rabbitClient.getChannel({
+      onReconnect: async (channel) => {
+        channel.consume(outputQueueName, async (msg, ch, data) => {
+          receivedMessages.push(data);
+          await ch.ack(msg);
+        });
+      },
+    });
+
+    await Promise.all(
+      messagesToSend.map(msg => service.send(msg)),
+    );
+
+    const areAllMessagesSentByService = await new Promise((resolve) => {
+      setTimeout(() => resolve(false), 5e3);
+
+      setInterval(() => {
+        if (receivedMessages.length === messagesToSend.length) {
+          const areAllMessagesSent = messagesToSend.map(
+            item => receivedMessages.some(receivedItem => receivedItem.test === item.test),
+          ).every(Boolean);
+
+          if (areAllMessagesSent) {
+            resolve(true);
+          }
+        }
+      }, 100);
+    });
+
+    expect(areAllMessagesSentByService).to.be.equal(true);
   });
 
   it('requeues message to input queue on listener\'s exceptions', async () => {

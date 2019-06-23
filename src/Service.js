@@ -74,7 +74,11 @@ module.exports = class Service {
       this.outputChannel = await this.rabbitClient.getChannel({
         onReconnect: async (channel) => {
           await channel.assertExchange(this.namespace, 'direct');
-          await channel.assertQueue(this.outputQueueName);
+
+          await channel.assertQueue(this.outputQueueName, {
+            messageTtl: this.outputMessageTtl,
+          });
+
           await channel.bindQueue(this.outputQueueName, this.namespace, this.outputQueueName);
         },
       });
@@ -88,11 +92,7 @@ module.exports = class Service {
       this.inputChannel = await this.rabbitClient.getChannel({
         onReconnect: async (channel) => {
           await channel.assertExchange(this.namespace, 'direct');
-
-          await channel.assertQueue(this.inputQueueName, {
-            messageTtl: this.outputMessageTtl,
-          });
-
+          await channel.assertQueue(this.inputQueueName);
           await channel.bindQueue(this.inputQueueName, this.namespace, this.inputQueueName);
 
           await channel.consume(this.inputQueueName, async (msg, ch, data) => {

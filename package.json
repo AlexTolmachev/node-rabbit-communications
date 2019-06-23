@@ -38,6 +38,6 @@
     "mocha": "^6.1.4"
   },
   "dependencies": {
-    "rabbit-client": "^1.1.2"
+    "rabbit-client": "^1.1.3"
   }
 }
