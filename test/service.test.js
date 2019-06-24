@@ -66,8 +66,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
 
     const { inputQueueName, outputQueueName } = service;
 
-    createdQueues.push(inputQueueName);
-    createdQueues.push(outputQueueName);
+    createdQueues.push(inputQueueName, outputQueueName);
 
     expect(inputQueueName).to.be.a('string');
     expect(outputQueueName).to.be.a('string');
@@ -106,8 +105,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     await inputService.start();
     await outputService.start();
 
-    createdQueues.push(inputService.inputQueueName);
-    createdQueues.push(outputService.outputQueueName);
+    createdQueues.push(inputService.inputQueueName, outputService.outputQueueName);
 
     expect(inputService.outputChannel).to.be.equal(undefined);
     expect(inputService.inputChannel).not.to.be.equal(undefined);
@@ -175,15 +173,18 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
-      setTimeout(() => resolve(false), 5e3);
+      const timeoutId = setTimeout(() => resolve(false), 2e3);
 
-      setInterval(() => {
+      const intervalId = setInterval(() => {
         if (receivedMessages.length === messagesToSend.length) {
           const areAllMessagesReceived = messagesToSend.map(
             item => receivedMessages.some(receivedItem => receivedItem.test === item.test),
           ).every(Boolean);
 
           if (areAllMessagesReceived) {
+            clearTimeout(timeoutId);
+            clearInterval(intervalId);
+
             resolve(true);
           }
         }
@@ -225,15 +226,18 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     );
 
     const areAllMessagesSentByService = await new Promise((resolve) => {
-      setTimeout(() => resolve(false), 5e3);
+      const timeoutId = setTimeout(() => resolve(false), 2e3);
 
-      setInterval(() => {
+      const intervalId = setInterval(() => {
         if (receivedMessages.length === messagesToSend.length) {
           const areAllMessagesSent = messagesToSend.map(
             item => receivedMessages.some(receivedItem => receivedItem.test === item.test),
           ).every(Boolean);
 
           if (areAllMessagesSent) {
+            clearTimeout(timeoutId);
+            clearInterval(intervalId);
+
             resolve(true);
           }
         }
@@ -243,11 +247,179 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     expect(areAllMessagesSentByService).to.be.equal(true);
   });
 
-  it('requeues message to input queue on listener\'s exceptions', async () => {
+  it('requeues message to input queue on listener\'s exceptions (shouldDiscardMessages = false)', async () => {
+    const testChannel = await rabbitClient.getChannel();
 
+    const service = new Service({
+      name: 'service-6-input-only',
+      shouldDiscardMessages: false,
+      isOutputEnabled: false,
+      isInputEnabled: true,
+      namespace: NAMESPACE,
+      rabbitClient,
+    });
+
+    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const receivedMessages = [];
+    const receivedRequeuedMessages = [];
+
+    service.addInputListener((data) => {
+      if (receivedMessages.some(receivedItem => receivedItem.test === data.test)) {
+        receivedRequeuedMessages.push(data);
+      } else {
+        receivedMessages.push(data);
+
+        throw new Error('Requeue test');
+      }
+    });
+
+    await service.start();
+
+    createdQueues.push(service.inputQueueName);
+
+    await Promise.all(
+      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, msg)),
+    );
+
+    const areMessagesReceivedByService = await new Promise((resolve) => {
+      const timeoutId = setTimeout(() => resolve(false), 2e3);
+
+      const intervalId = setInterval(() => {
+        if (receivedMessages.length !== messagesToSend.length) {
+          return;
+        }
+
+        if (receivedRequeuedMessages.length !== receivedMessages.length) {
+          return;
+        }
+
+        const areAllMessagesReceived = messagesToSend.map(
+          item => receivedMessages.some(receivedItem => receivedItem.test === item.test),
+        ).every(Boolean);
+
+        const areAllRequeuedMessagesReceived = messagesToSend.map(
+          item => receivedRequeuedMessages.some(receivedItem => receivedItem.test === item.test),
+        ).every(Boolean);
+
+        if (areAllMessagesReceived && areAllRequeuedMessagesReceived) {
+          clearTimeout(timeoutId);
+          clearInterval(intervalId);
+
+          resolve(true);
+        }
+      }, 100);
+    });
+
+    expect(areMessagesReceivedByService).to.be.equal(true);
+  });
+
+  it('discards messages on listener\'s exceptions (shouldDiscardMessages = true)', async () => {
+    const testChannel = await rabbitClient.getChannel();
+
+    const service = new Service({
+      name: 'service-7-input-only',
+      shouldDiscardMessages: true,
+      isOutputEnabled: false,
+      isInputEnabled: true,
+      namespace: NAMESPACE,
+      rabbitClient,
+    });
+
+    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const receivedMessages = [];
+    const receivedRequeuedMessages = [];
+
+    service.addInputListener((data) => {
+      if (receivedMessages.some(receivedItem => receivedItem.test === data.test)) {
+        receivedRequeuedMessages.push(data);
+      } else {
+        receivedMessages.push(data);
+
+        throw new Error('Requeue test');
+      }
+    });
+
+    await service.start();
+
+    createdQueues.push(service.inputQueueName);
+
+    await Promise.all(
+      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, msg)),
+    );
+
+    const areMessagesReceivedByService = await new Promise((resolve) => {
+      const timeoutId = setTimeout(() => resolve(false), 2e3);
+
+      const intervalId = setInterval(() => {
+        if (receivedMessages.length !== messagesToSend.length) {
+          return;
+        }
+
+        const areAllMessagesReceived = messagesToSend.map(
+          item => receivedMessages.some(receivedItem => receivedItem.test === item.test),
+        ).every(Boolean);
+
+        const areAllRequeuedMessagesDiscarded = receivedRequeuedMessages.length === 0;
+
+        if (areAllMessagesReceived && areAllRequeuedMessagesDiscarded) {
+          clearTimeout(timeoutId);
+          clearInterval(intervalId);
+
+          resolve(true);
+        }
+      }, 100);
+    });
+
+    expect(areMessagesReceivedByService).to.be.equal(true);
   });
 
   it('passes itself to input listener and allows to send output messages using it', async () => {
+    const service = new Service({
+      shouldDiscardMessages: true,
+      isOutputEnabled: true,
+      isInputEnabled: true,
+      namespace: NAMESPACE,
+      name: 'service-8',
+      rabbitClient,
+    });
 
+    service.addInputListener((data, serviceInstance) => {
+      serviceInstance.send(data); // input queue -> output queue "echo"
+    });
+
+    await service.start();
+
+    const { inputQueueName, outputQueueName } = service;
+
+    createdQueues.push(inputQueueName, outputQueueName);
+
+    let isOutputMessageReceived = false;
+
+    const testChannel = await rabbitClient.getChannel({
+      onReconnect: async (channel) => {
+        channel.consume(outputQueueName, async (msg, ch) => {
+          isOutputMessageReceived = true;
+
+          await ch.ack(msg);
+        });
+      },
+    });
+
+    await testChannel.sendToQueue(inputQueueName, { foo: 'bar' });
+
+    const isEchoMessageReceived = await new Promise((resolve) => {
+      const timeoutId = setTimeout(() => resolve(false), 2e3);
+
+      const intervalId = setInterval(() => {
+        if (isOutputMessageReceived) {
+          clearTimeout(timeoutId);
+          clearInterval(intervalId);
+
+          resolve(true);
+        }
+      }, 100);
+    });
+
+    expect(isEchoMessageReceived).to.be.equal(true);
   });
 });

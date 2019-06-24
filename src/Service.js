@@ -13,6 +13,7 @@ module.exports = class Service {
       isInputEnabled = true,
       isOutputEnabled = true,
       outputMessageTtl = 3e4,
+      shouldDiscardMessages = false,
       namespace = 'rabbit-communications',
     } = options;
 
@@ -34,6 +35,10 @@ module.exports = class Service {
       `);
     }
 
+    if (!isInputEnabled && shouldDiscardMessages) {
+      throw new Error('There\'s no point to set "shouldDiscardMessages" flag to "true" if service\'s input is disabled');
+    }
+
     this.name = name;
     this.namespace = namespace;
     this.rabbitClient = rabbitClient;
@@ -41,6 +46,7 @@ module.exports = class Service {
     this.isInputEnabled = isInputEnabled;
     this.isOutputEnabled = isOutputEnabled;
     this.outputMessageTtl = outputMessageTtl;
+    this.shouldDiscardMessages = shouldDiscardMessages;
 
     this.inputQueueName = `${namespace}:${this.name}:input`;
     this.outputQueueName = `${namespace}:${this.name}:output`;
@@ -102,7 +108,7 @@ module.exports = class Service {
               await ch.ack(msg);
             } catch (e) {
               console.error(e);
-              await ch.nack(msg, false, true); // requeue message
+              await ch.nack(msg, false, !this.shouldDiscardMessages); // requeue message
             }
           });
         },
