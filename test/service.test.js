@@ -6,15 +6,12 @@ const { RABBIT_URL } = process.env;
 describe('Service (allows to exchange messages with it in both directions)', () => {
   const NAMESPACE = 'namespace-1';
 
-  const createdQueues = [];
-  let rabbitClient;
-
-  before(() => {
-    rabbitClient = new RabbitClient(RABBIT_URL, {
-      appName: NAMESPACE,
-      json: true,
-    });
+  const rabbitClient = new RabbitClient(RABBIT_URL, {
+    appName: NAMESPACE,
+    json: true,
   });
+
+  const createdQueues = [];
 
   after(async () => {
     try {
@@ -269,7 +266,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       } else {
         receivedMessages.push(data);
 
-        throw new Error('Requeue test');
+        throw new Error('Service test exception');
       }
     });
 
