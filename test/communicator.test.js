@@ -26,23 +26,66 @@ describe('Communicator (connects to specific Service for two-way communication)'
 
 
   it('allows to turn off input or output functionality (ex. ignore service, stop consuming it\'s messages)', async () => {
-    // const serviceName = 'service-1';
-    //
-    // const service = new Service({
-    //   namespace: NAMESPACE,
-    //   name: serviceName,
-    //   isInputEnabled: false,
-    //   isOutputEnabled: false,
-    //   rabbitClient,
-    // });
-    //
-    // const communicator = new Communicator({
-    //   namespace: NAMESPACE,
-    //   targetServiceName: serviceName,
-    //   isInputEnabled: false,
-    //   isOutputEnabled: false,
-    //   rabbitClient,
-    // });
+    const serviceName = 'service-1';
+
+    const service = new Service({
+      namespace: NAMESPACE,
+      name: serviceName,
+      isInputEnabled: true,
+      isOutputEnabled: true,
+      rabbitClient,
+    });
+
+    service.addInputListener(() => {});
+
+    const inputCommunicator = new Communicator({
+      namespace: NAMESPACE,
+      targetServiceName: serviceName,
+      isInputEnabled: true,
+      isOutputEnabled: false,
+      rabbitClient,
+    });
+
+    const outputCommunicator = new Communicator({
+      namespace: NAMESPACE,
+      targetServiceName: serviceName,
+      isInputEnabled: false,
+      isOutputEnabled: true,
+      rabbitClient,
+    });
+
+    outputCommunicator.addOutputListener(() => {}); // required to start communicator
+
+    let isInputCommunicatorErrorCaught = false;
+
+    try {
+      inputCommunicator.addOutputListener(() => {});
+    } catch (e) {
+      isInputCommunicatorErrorCaught = true;
+    }
+
+    expect(isInputCommunicatorErrorCaught).to.be.equal(true);
+
+    await service.start();
+    await inputCommunicator.start();
+    await outputCommunicator.start();
+
+    createdQueues.push(service.inputQueueName, service.outputQueueName);
+
+    expect(inputCommunicator.inputChannel).not.to.be.equal(undefined);
+    expect(inputCommunicator.outputChannel).to.be.equal(undefined);
+    expect(outputCommunicator.outputChannel).not.to.be.equal(undefined);
+    expect(outputCommunicator.inputChannel).to.be.equal(undefined);
+
+    let isOutputCommunicatorErrorCaught = false;
+
+    try {
+      await outputCommunicator.send({ foo: 'bar' });
+    } catch (e) {
+      isOutputCommunicatorErrorCaught = true;
+    }
+
+    expect(isOutputCommunicatorErrorCaught).to.be.equal(true);
   });
 
   it('start method throws exception if service output channel is enabled but no listener provided', async () => {
