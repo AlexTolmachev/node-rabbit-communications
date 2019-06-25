@@ -7,6 +7,7 @@ describe('Communicator (connects to specific Service for two-way communication)'
   const NAMESPACE = 'namespace-2';
 
   const rabbitClient = new RabbitClient(RABBIT_URL, {
+    disableLogging: true,
     appName: NAMESPACE,
     json: true,
   });

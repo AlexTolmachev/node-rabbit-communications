@@ -114,5 +114,12 @@ module.exports = class Communicator {
         },
       });
     }
+
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`Communicator for service "${this.targetServiceName}" successfully started`);
+      console.log(`﹂RabbitMQ connection url: ${this.rabbitClient.rabbitUrl}`);
+      console.log(`﹂Target service's input queue name: ${this.isInputEnabled ? this.inputQueueName : 'DISABLED'}`);
+      console.log(`﹂Target service's output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}`);
+    }
   }
 };

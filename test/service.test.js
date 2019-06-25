@@ -7,6 +7,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
   const NAMESPACE = 'namespace-1';
 
   const rabbitClient = new RabbitClient(RABBIT_URL, {
+    disableLogging: true,
     appName: NAMESPACE,
     json: true,
   });

@@ -113,5 +113,12 @@ module.exports = class Service {
         },
       });
     }
+
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`Service "${this.name}" successfully started`);
+      console.log(`﹂RabbitMQ connection url: ${this.rabbitClient.rabbitUrl}`);
+      console.log(`﹂Input queue name: ${this.isInputEnabled ? this.inputQueueName : 'DISABLED'}`);
+      console.log(`﹂Output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}`);
+    }
   }
 };

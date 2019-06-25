@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "mocha --exit",
+    "test": "NODE_ENV=test mocha --exit",
     "eslint": "eslint src",
     "eslint:fix": "eslint src"
   },
@@ -38,6 +38,6 @@
     "mocha": "^6.1.4"
   },
   "dependencies": {
-    "rabbit-client": "^1.1.3"
+    "rabbit-client": "^1.1.5"
   }
 }
