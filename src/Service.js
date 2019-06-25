@@ -103,12 +103,11 @@ module.exports = class Service {
 
           await channel.consume(this.inputQueueName, async (msg, ch, data) => {
             try {
-              // TODO: pass "this" as second argument to inputListener?
               await this.inputListener(data, this);
               await ch.ack(msg);
             } catch (e) {
               console.error(e);
-              await ch.nack(msg, false, !this.shouldDiscardMessages); // requeue message
+              await ch.nack(msg, false, !this.shouldDiscardMessages);
             }
           });
         },
