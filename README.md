@@ -35,7 +35,11 @@ using __Services__ and __Communicators__, there's a pair of examples:
 
 For cases when you have a main application that interacts
 with many services at the same time,
-there is a __CommunicatorManager__ in `rabbit-communications`, here's the scheme:
+there is a __CommunicatorManager__ in `rabbit-communications`,
+which manages __pool of Communicators__ and provides helpful features
+like outputListener's middleware and RabbitMQ connection sharing.
+
+Here is a diagram of the service architecture using the manager:
 
 ![CommunicatorManager example](./assets/4.png)
 
