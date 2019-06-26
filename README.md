@@ -37,15 +37,13 @@ For cases when you have a main application that interacts
 with many services at the same time,
 there is a __CommunicatorManager__ in `rabbit-communications`,
 which manages __pool of Communicators__ and provides helpful features
-like outputListener's middleware and RabbitMQ connection sharing.
+like outputListener's middleware, RabbitMQ connection sharing and other cool features.
 
 Here is a diagram of the service architecture using the manager:
 
 ![CommunicatorManager example](./assets/4.png)
 
-## Usage
-
-### Service/Communicator
+## Usage example
 
 Let's write a Service and Communicator that will exchange "ping-pong" messages and log it into the console.
 
@@ -68,7 +66,8 @@ const { Service } = require('rabbit-communications');
   service.addInputListener(async (ctx) => {
     console.log(`Received message from Communicator: ${ctx.data.message}`);
     
-    await ctx.reply({ message: 'pong' }); // echo, will trigger Communicator's output listener
+    // echo, will trigger Communicator's output listener
+    await ctx.reply({ message: 'pong' });
   });
   
   await service.start(); // returns promise
@@ -86,8 +85,8 @@ const { Communicator } = require('rabbit-communications');
     isInputEnabled: true,
     isOutputEnabled: true,
     shouldDiscardMessages: true,
-    rabbitOptions: {
-      url: 'amqp://guest:guest@localhost:5672', // and the RabbitMQ configuration, obviously, should also be the same :)
+    rabbitOptions: { // and the RabbitMQ configuration, obviously, should also be the same :)
+      url: 'amqp://guest:guest@localhost:5672',
     },
   });
   
@@ -97,7 +96,8 @@ const { Communicator } = require('rabbit-communications');
   
   await communicator.start();
   
-  await communicator.send({ message: 'ping' }); // this will trigger Service's input listener
+  // this will trigger Service's input listener
+  await communicator.send({ message: 'ping' });
 })();
 ```
 
