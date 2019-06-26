@@ -1,4 +1,5 @@
 const RabbitClient = require('rabbit-client');
+const ListenerContext = require('./ListenerContext');
 
 module.exports = class Communicator {
   constructor(options) {
@@ -60,10 +61,15 @@ module.exports = class Communicator {
     this.outputListener = fn;
   }
 
-  async send(payload) {
+  async send(data, metadata = {}) {
     if (!this.isInputEnabled) {
       throw new Error('Service input channel is disabled, can not send message');
     }
+
+    const payload = {
+      metadata,
+      data,
+    };
 
     return this.inputChannel.publish(this.namespace, this.inputQueueName, payload);
   }
@@ -102,9 +108,19 @@ module.exports = class Communicator {
 
           await channel.bindQueue(this.outputQueueName, this.namespace, this.outputQueueName);
 
-          await channel.consume(this.outputQueueName, async (msg, ch, data) => {
+          await channel.consume(this.outputQueueName, async (msg, ch, parsedMessage) => {
             try {
-              await this.outputListener(data, this);
+              const { data, metadata } = parsedMessage;
+
+              const ctx = new ListenerContext({
+                communicator: this,
+                rabbitMessage: msg,
+                rabbitChannel: ch,
+                metadata,
+                data,
+              });
+
+              await this.outputListener(ctx);
               await ch.ack(msg);
             } catch (e) {
               console.error(e);
@@ -119,7 +135,7 @@ module.exports = class Communicator {
       console.log(`Communicator for service "${this.targetServiceName}" successfully started`);
       console.log(`﹂RabbitMQ connection url: ${this.rabbitClient.rabbitUrl}`);
       console.log(`﹂Target service's input queue name: ${this.isInputEnabled ? this.inputQueueName : 'DISABLED'}`);
-      console.log(`﹂Target service's output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}`);
+      console.log(`﹂Target service's output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}\n`);
     }
   }
 };

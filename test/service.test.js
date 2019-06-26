@@ -155,11 +155,11 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       rabbitClient,
     });
 
-    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const messagesToSend = new Array(100).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
 
-    service.addInputListener((data) => {
-      receivedMessages.push(data);
+    service.addInputListener((ctx) => {
+      receivedMessages.push(ctx.data);
     });
 
     await service.start();
@@ -167,7 +167,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     createdQueues.push(service.inputQueueName);
 
     await Promise.all(
-      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, msg)),
+      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, { data: msg })),
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
@@ -207,13 +207,13 @@ describe('Service (allows to exchange messages with it in both directions)', () 
 
     createdQueues.push(outputQueueName);
 
-    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const messagesToSend = new Array(100).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
 
     await rabbitClient.getChannel({
       onReconnect: async (channel) => {
-        channel.consume(outputQueueName, async (msg, ch, data) => {
-          receivedMessages.push(data);
+        channel.consume(outputQueueName, async (msg, ch, parsedMessage) => {
+          receivedMessages.push(parsedMessage.data);
           await ch.ack(msg);
         });
       },
@@ -257,11 +257,11 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       rabbitClient,
     });
 
-    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const messagesToSend = new Array(3).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
     const receivedRequeuedMessages = [];
 
-    service.addInputListener((data) => {
+    service.addInputListener(({ data }) => {
       if (receivedMessages.some(receivedItem => receivedItem.test === data.test)) {
         receivedRequeuedMessages.push(data);
       } else {
@@ -276,7 +276,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     createdQueues.push(service.inputQueueName);
 
     await Promise.all(
-      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, msg)),
+      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, { data: msg })),
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
@@ -323,17 +323,17 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       rabbitClient,
     });
 
-    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const messagesToSend = new Array(3).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
     const receivedRequeuedMessages = [];
 
-    service.addInputListener((data) => {
+    service.addInputListener(({ data }) => {
       if (receivedMessages.some(receivedItem => receivedItem.test === data.test)) {
         receivedRequeuedMessages.push(data);
       } else {
         receivedMessages.push(data);
 
-        throw new Error('Requeue test');
+        throw new Error('Service discard test');
       }
     });
 
@@ -342,7 +342,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     createdQueues.push(service.inputQueueName);
 
     await Promise.all(
-      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, msg)),
+      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, { data: msg })),
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
@@ -381,8 +381,8 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       rabbitClient,
     });
 
-    service.addInputListener((data, serviceInstance) => {
-      serviceInstance.send(data); // input queue -> output queue "echo"
+    service.addInputListener((ctx) => {
+      ctx.service.send(ctx.data); // input queue -> output queue "echo"
     });
 
     await service.start();
@@ -403,7 +403,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       },
     });
 
-    await testChannel.sendToQueue(inputQueueName, { foo: 'bar' });
+    await testChannel.sendToQueue(inputQueueName, { data: {} });
 
     const isEchoMessageReceived = await new Promise((resolve) => {
       const timeoutId = setTimeout(() => resolve(false), 2e3);

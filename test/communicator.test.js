@@ -133,8 +133,8 @@ describe('Communicator (connects to specific Service for two-way communication)'
     const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
 
-    communicator.addOutputListener((data) => {
-      receivedMessages.push(data);
+    communicator.addOutputListener((ctx) => {
+      receivedMessages.push(ctx.data);
     });
 
     await service.start();
@@ -187,11 +187,11 @@ describe('Communicator (connects to specific Service for two-way communication)'
       rabbitClient,
     });
 
-    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const messagesToSend = new Array(100).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
 
-    service.addInputListener((data) => {
-      receivedMessages.push(data);
+    service.addInputListener((ctx) => {
+      receivedMessages.push(ctx.data);
     });
 
     await service.start();
@@ -244,11 +244,11 @@ describe('Communicator (connects to specific Service for two-way communication)'
       rabbitClient,
     });
 
-    const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
+    const messagesToSend = new Array(3).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
     const receivedRequeuedMessages = [];
 
-    communicator.addOutputListener((data) => {
+    communicator.addOutputListener(({ data }) => {
       if (receivedMessages.some(receivedItem => receivedItem.test === data.test)) {
         receivedRequeuedMessages.push(data);
       } else {
@@ -321,14 +321,14 @@ describe('Communicator (connects to specific Service for two-way communication)'
     const messagesToSend = new Array(10).fill(null).map(() => ({ test: Math.random() }));
     const receivedMessages = [];
 
-    service.addInputListener((data) => {
-      receivedMessages.push(data);
+    service.addInputListener((ctx) => {
+      receivedMessages.push(ctx.data);
     });
 
-    communicator.addOutputListener(async (data, communicatorInstance) => {
+    communicator.addOutputListener(async (ctx) => {
       // trigger received
       await Promise.all(
-        messagesToSend.map(msg => communicatorInstance.send(msg)),
+        messagesToSend.map(msg => ctx.reply(msg)),
       );
     });
 

@@ -1,4 +1,5 @@
 const RabbitClient = require('rabbit-client');
+const ListenerContext = require('./ListenerContext');
 
 module.exports = class Service {
   constructor(options) {
@@ -60,10 +61,15 @@ module.exports = class Service {
     this.inputListener = fn;
   }
 
-  async send(payload) {
+  async send(data, metadata = {}) {
     if (!this.isOutputEnabled) {
       throw new Error('Service output channel is disabled, can not send message');
     }
+
+    const payload = {
+      metadata,
+      data,
+    };
 
     return this.outputChannel.publish(this.namespace, this.outputQueueName, payload);
   }
@@ -101,9 +107,19 @@ module.exports = class Service {
           await channel.assertQueue(this.inputQueueName);
           await channel.bindQueue(this.inputQueueName, this.namespace, this.inputQueueName);
 
-          await channel.consume(this.inputQueueName, async (msg, ch, data) => {
+          await channel.consume(this.inputQueueName, async (msg, ch, parsedMessage) => {
             try {
-              await this.inputListener(data, this);
+              const { data, metadata } = parsedMessage;
+
+              const ctx = new ListenerContext({
+                rabbitMessage: msg,
+                rabbitChannel: ch,
+                service: this,
+                metadata,
+                data,
+              });
+
+              await this.inputListener(ctx);
               await ch.ack(msg);
             } catch (e) {
               console.error(e);
@@ -118,7 +134,7 @@ module.exports = class Service {
       console.log(`Service "${this.name}" successfully started`);
       console.log(`﹂RabbitMQ connection url: ${this.rabbitClient.rabbitUrl}`);
       console.log(`﹂Input queue name: ${this.isInputEnabled ? this.inputQueueName : 'DISABLED'}`);
-      console.log(`﹂Output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}`);
+      console.log(`﹂Output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}\n`);
     }
   }
 };
