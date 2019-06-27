@@ -200,7 +200,6 @@ const service1 = new Service({
   isOutputEnabled: true,
   isInputEnabled: true,
   shouldDiscardMessages: false,
-  outputMessageTtl: 3e4,
   rabbitOptions: {
     url: 'amqp://guest:guest@localhost:5672',
   },
@@ -220,7 +219,6 @@ const service2 = new Service({
   isOutputEnabled: true,
   isInputEnabled: true,
   shouldDiscardMessages: false,
-  outputMessageTtl: 3e4,
   rabbitClient, // RabbitClient instance is passed instead of rabbitOptions
 });
 ```
@@ -236,7 +234,6 @@ const service2 = new Service({
 - __isInputEnabled__ - whether the service should receive messages from the Communicator
 - __shouldDiscardMessages__ - whether the service should delete messages instead of returning
     them back to the input queue if an error occurred during its processing
-- __outputMessageTtl__ - message ttl in output queue
 - __rabbitOptions__ - settings for connecting to RabbitMQ
     (used if rabbitClient was not passed to the constructor)
 - __rabbitClient__ - [RabbitClient](#rabbitclient) instance

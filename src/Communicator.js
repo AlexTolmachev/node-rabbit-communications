@@ -100,9 +100,7 @@ module.exports = class Communicator {
         onReconnect: async (channel) => {
           await channel.assertExchange(this.namespace, 'direct');
 
-          await channel.assertQueue(this.outputQueueName, {
-            messageTtl: this.outputMessageTtl,
-          });
+          await channel.assertQueue(this.outputQueueName);
 
           await channel.bindQueue(this.outputQueueName, this.namespace, this.outputQueueName);
 

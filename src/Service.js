@@ -13,7 +13,6 @@ module.exports = class Service {
       rabbitOptions,
       isInputEnabled = true,
       isOutputEnabled = true,
-      outputMessagesTtl = 3e4,
       shouldDiscardMessages = false,
       namespace = 'rabbit-communications',
     } = settings;
@@ -46,7 +45,6 @@ module.exports = class Service {
     this.rabbitOptions = rabbitOptions;
     this.isInputEnabled = isInputEnabled;
     this.isOutputEnabled = isOutputEnabled;
-    this.outputMessagesTtl = outputMessagesTtl;
     this.shouldDiscardMessages = shouldDiscardMessages;
 
     this.inputQueueName = `${namespace}:${this.name}:input`;
@@ -87,9 +85,7 @@ module.exports = class Service {
         onReconnect: async (channel) => {
           await channel.assertExchange(this.namespace, 'direct');
 
-          await channel.assertQueue(this.outputQueueName, {
-            messageTtl: this.outputMessagesTtl,
-          });
+          await channel.assertQueue(this.outputQueueName);
 
           await channel.bindQueue(this.outputQueueName, this.namespace, this.outputQueueName);
         },
