@@ -2,9 +2,9 @@ const RabbitClient = require('rabbit-client');
 const ListenerContext = require('./ListenerContext');
 
 module.exports = class Service {
-  constructor(options) {
-    if (!options) {
-      throw new Error('No options passed to the Service constructor');
+  constructor(settings) {
+    if (!settings) {
+      throw new Error('No settings passed to the Service constructor');
     }
 
     const {
@@ -13,10 +13,10 @@ module.exports = class Service {
       rabbitOptions,
       isInputEnabled = true,
       isOutputEnabled = true,
-      outputMessageTtl = 3e4,
+      outputMessagesTtl = 3e4,
       shouldDiscardMessages = false,
       namespace = 'rabbit-communications',
-    } = options;
+    } = settings;
 
     if (!name) {
       throw new Error('Service name is required');
@@ -46,7 +46,7 @@ module.exports = class Service {
     this.rabbitOptions = rabbitOptions;
     this.isInputEnabled = isInputEnabled;
     this.isOutputEnabled = isOutputEnabled;
-    this.outputMessageTtl = outputMessageTtl;
+    this.outputMessagesTtl = outputMessagesTtl;
     this.shouldDiscardMessages = shouldDiscardMessages;
 
     this.inputQueueName = `${namespace}:${this.name}:input`;
@@ -88,7 +88,7 @@ module.exports = class Service {
           await channel.assertExchange(this.namespace, 'direct');
 
           await channel.assertQueue(this.outputQueueName, {
-            messageTtl: this.outputMessageTtl,
+            messageTtl: this.outputMessagesTtl,
           });
 
           await channel.bindQueue(this.outputQueueName, this.namespace, this.outputQueueName);

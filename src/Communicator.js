@@ -2,9 +2,9 @@ const RabbitClient = require('rabbit-client');
 const ListenerContext = require('./ListenerContext');
 
 module.exports = class Communicator {
-  constructor(options) {
-    if (!options) {
-      throw new Error('No options passed to the Communicator constructor');
+  constructor(settings) {
+    if (!settings) {
+      throw new Error('No settings passed to the Communicator constructor');
     }
 
     const {
@@ -13,10 +13,9 @@ module.exports = class Communicator {
       targetServiceName,
       isInputEnabled = true,
       isOutputEnabled = true,
-      outputMessageTtl = 3e4,
       shouldDiscardMessages = false,
       namespace = 'rabbit-communications',
-    } = options;
+    } = settings;
 
     if (!targetServiceName) {
       throw new Error('Target service name is required');
@@ -45,7 +44,6 @@ module.exports = class Communicator {
     this.rabbitOptions = rabbitOptions;
     this.isInputEnabled = isInputEnabled;
     this.isOutputEnabled = isOutputEnabled;
-    this.outputMessageTtl = outputMessageTtl;
     this.targetServiceName = targetServiceName;
     this.shouldDiscardMessages = shouldDiscardMessages;
 

@@ -165,6 +165,193 @@ and `my-services:example-1:output`
 (these queues are generated automatically,
 their names are in the application logs above)
 
+## API Reference
+
+### RabbitClient
+
+```javascript
+const { RabbitClient } = require('rabbit-communications');
+```
+
+`rabbit-communications` exports RabbitClient
+class from [rabbit-client](https://www.npmjs.com/package/rabbit-client) npm package.
+Documentation and usage examples can be found on the it's npm page.
+
+You can pass RabbitClient instance to Service, Communicator and CommunicatorManager constructors,
+if you don't, RabbitClient will still be used under the hood (configured from rabbitOptions)
+
+### Service
+
+```javascript
+const { Service } = require('rabbit-communications');
+```
+
+* [constructor(settings)](#constructorsettings)
+* [.addInputListener(fn)](#addinputlistenerfn)
+
+#### constructor(settings)
+
+Create Service instance.
+
+```javascript
+const service1 = new Service({
+  namespace: 'my-namespace',
+  name: 'my-service-1',
+  isOutputEnabled: true,
+  isInputEnabled: true,
+  shouldDiscardMessages: false,
+  outputMessageTtl: 3e4,
+  rabbitOptions: {
+    url: 'amqp://guest:guest@localhost:5672',
+  },
+});
+
+// or
+
+const rabbitClient = new RabbitClient('amqp://guest:guest@localhost:5672', {
+  appName: 'my-rabbit-client',
+  disableLogging: true,
+  json: true,
+});
+
+const service2 = new Service({
+  namespace: 'my-namespace',
+  name: 'my-service-2',
+  isOutputEnabled: true,
+  isInputEnabled: true,
+  shouldDiscardMessages: false,
+  outputMessageTtl: 3e4,
+  rabbitClient, // RabbitClient instance is passed instead of rabbitOptions
+});
+```
+
+##### Settings description:
+
+- __namespace__ - the name of the service group used
+    to distinguish them based on their part of your system,
+    for example, `namespace "shop" -> service "accounts"`
+    and `namespace "social" -> service "accounts"`
+- __name__ - service name used to connect Сommunicators
+- __isOutputEnabled__ - whether the service should send messages to Communicator
+- __isInputEnabled__ - whether the service should receive messages from the Communicator
+- __shouldDiscardMessages__ - whether the service should delete messages instead of returning
+    them back to the input queue if an error occurred during its processing
+- __outputMessageTtl__ - message ttl in output queue
+- __rabbitOptions__ - settings for connecting to RabbitMQ
+    (used if rabbitClient was not passed to the constructor)
+- __rabbitClient__ - [RabbitClient](#rabbitclient) instance
+    (if rabbitClient is passed, rabbitOptions are ignored)
+
+#### addInputListener(fn)
+
+Add callback to messages from __input queue__.
+
+_If you passed `isInputEnabled: true` to the Service constructor,
+you __must__ add input listener before `service.start()` is called._
+
+```javascript
+service.addInputListener((ctx) => {
+  // your awesome input handler goes here..
+})
+```
+
+#### send(data, metadata = {})
+
+Send message to __output queue__.
+
+```javascript
+await service.send({ foo: 'bar' });
+```
+
+#### start()
+
+Start service (input and output queues and channels are created).
+
+```javascript
+await service.start();
+```
+
+### Communicator
+
+#### constructor(settings)
+
+Create Service instance.
+
+```javascript
+const communicator1 = new Communicator({
+  namespace: 'my-namespace',
+  targetServiceName: 'my-service-1',
+  isOutputEnabled: true,
+  isInputEnabled: true,
+  shouldDiscardMessages: false,
+  rabbitOptions: {
+    url: 'amqp://guest:guest@localhost:5672',
+  },
+});
+
+// or
+
+const rabbitClient = new RabbitClient('amqp://guest:guest@localhost:5672', {
+  appName: 'my-rabbit-client',
+  disableLogging: true,
+  json: true,
+});
+
+const communicator2 = new Communicator({
+  namespace: 'my-namespace',
+  targetServiceName: 'my-service-1',
+  isOutputEnabled: true,
+  isInputEnabled: true,
+  shouldDiscardMessages: false,
+  rabbitClient,
+});
+```
+
+##### Settings description:
+
+- __namespace__ - the name of the service group used
+    to distinguish them based on their part of your system,
+    for example, `namespace "shop" -> service "accounts"`
+    and `namespace "social" -> service "accounts"`
+- __targetServiceName__ - name of the service to which communicator will be connected
+- __isOutputEnabled__ - whether the communicator should listen service's output queue
+- __isInputEnabled__ - will the communicator send messages to service's input queue
+- __shouldDiscardMessages__ - whether the communicator should delete messages instead of returning
+    them back to the service's output queue if an error occurred during its processing
+- __rabbitOptions__ - settings for connecting to RabbitMQ
+    (used if rabbitClient was not passed to the constructor)
+- __rabbitClient__ - [RabbitClient](#rabbitclient) instance
+    (if rabbitClient is passed, rabbitOptions are ignored)
+    
+#### addOutputListener(fn)
+
+Add callback to messages from __service's output queue__.
+
+_If you passed `isOutputEnabled: true` to the Communicator constructor,
+you __must__ add service output listener before `communicator.start()` is called._
+
+```javascript
+service.addOutputListener((ctx) => {
+  // your awesome service output handler goes here..
+})
+```
+
+#### send(data, metadata = {})
+
+Send message to service's __input queue__.
+
+```javascript
+await service.send({ foo: 'bar' });
+```
+
+#### start()
+
+Start communicator (connect to the target service input and output channels).
+
+```javascript
+await communicator.start();
+```
+
 ## License
 
 MIT.
