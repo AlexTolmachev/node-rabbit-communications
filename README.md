@@ -304,7 +304,7 @@ await service.start();
 const { Communicator } = require('rabbit-communications');
 ```
 
-* [constructor(settings)](#constructorsettings)
+* [constructor(settings)](#constructorsettings-1)
 * [.addOutputListener(fn)](#addoutputlistenerfn)
 * [.send(data, metadata = {})](#senddata-metadata---1)
 * [.start()](#start-1)
@@ -396,12 +396,12 @@ await communicator.start();
 const { CommunicatorManager } = require('rabbit-communications');
 ```
 
-* [constructor(settings)](#constructorsettings)
-* [.registerCommunicator(targetServiceName, communicatorOptions, outputListener)](#)
-* [.send(targetServiceName, data, metadata = {})](#)
-* [.broadcast(data, metadata = {})](#)
-* [.applyMiddleware(...args)](#)
-* [.addOutputListener(targetServiceName, fn)](#)
+* [constructor(settings)](#constructorsettings-2)
+* [.registerCommunicator(targetServiceName, communicatorOptions, outputListener)](#registercommunicatortargetservicename-communicatoroptions-outputlistener)
+* [.send(targetServiceName, data, metadata = {})](#sendtargetservicename-data-metadata--)
+* [.broadcast(data, metadata = {})](#broadcastdata-metadata--)
+* [.applyMiddleware(...args)](#applymiddlewareargs)
+* [.addOutputListener(targetServiceName, fn)](#addoutputlistenertargetservicename-fn)
 * [.start()](#start-2)
 
 #### constructor(settings)
@@ -510,7 +510,7 @@ manager.applyMiddleware(async (ctx, next) => {
   console.timeEnd('Output listener execution time');
 });
 
-manager.addOutputListener(async (ctx) => {
+manager.addOutputListener('my-service-1', async (ctx) => {
   await new Promise(resolve => setTimeout(resolve, 1500));
 });
 ```

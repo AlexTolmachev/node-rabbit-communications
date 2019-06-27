@@ -1,6 +1,6 @@
 {
   "name": "rabbit-communications",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Configure two-way communication between microservices via RabbitMQ 📥 📤",
   "main": "src/index.js",
   "scripts": {
