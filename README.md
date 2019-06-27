@@ -270,6 +270,10 @@ await service.start();
 
 ### Communicator
 
+```javascript
+const { Communicator } = require('rabbit-communications');
+```
+
 #### constructor(settings)
 
 Create Service instance.
