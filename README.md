@@ -2,6 +2,11 @@
 
 Configure two-way communication between microservices via RabbitMQ 📥 📤
 
+* [Install](#install)
+* [Basic concepts](#basic-concepts)
+* [Usage example](#usage-example)
+* [API Reference](#api-reference)
+
 ## Install
 
 ```bash
@@ -167,6 +172,12 @@ their names are in the application logs above)
 
 ## API Reference
 
+* [RabbitClient](#rabbitclient)
+* [Service](#service)
+* [Communicator](#communicator)
+
+---
+
 ### RabbitClient
 
 ```javascript
@@ -178,7 +189,9 @@ class from [rabbit-client](https://www.npmjs.com/package/rabbit-client) npm pack
 Documentation and usage examples can be found on the it's npm page.
 
 You can pass RabbitClient instance to Service, Communicator and CommunicatorManager constructors,
-if you don't, RabbitClient will still be used under the hood (configured from rabbitOptions)
+if you don't, RabbitClient will be created under the hood (configured from rabbitOptions)
+
+---
 
 ### Service
 
@@ -188,6 +201,8 @@ const { Service } = require('rabbit-communications');
 
 * [constructor(settings)](#constructorsettings)
 * [.addInputListener(fn)](#addinputlistenerfn)
+* [.send(data, metadata = {})](#senddata-metadata--)
+* [.start()](#start)
 
 #### constructor(settings)
 
@@ -239,7 +254,7 @@ const service2 = new Service({
 - __rabbitClient__ - [RabbitClient](#rabbitclient) instance
     (if rabbitClient is passed, rabbitOptions are ignored)
 
-#### addInputListener(fn)
+#### .addInputListener(fn)
 
 Add callback to messages from __input queue__.
 
@@ -252,7 +267,7 @@ service.addInputListener((ctx) => {
 })
 ```
 
-#### send(data, metadata = {})
+#### .send(data, metadata = {})
 
 Send message to __output queue__.
 
@@ -260,7 +275,7 @@ Send message to __output queue__.
 await service.send({ foo: 'bar' });
 ```
 
-#### start()
+#### .start()
 
 Start service (input and output queues and channels are created).
 
@@ -268,11 +283,18 @@ Start service (input and output queues and channels are created).
 await service.start();
 ```
 
+---
+
 ### Communicator
 
 ```javascript
 const { Communicator } = require('rabbit-communications');
 ```
+
+* [constructor(settings)](#constructorsettings)
+* [.addOutputListener(fn)](#addoutputlistenerfn)
+* [.send(data, metadata = {})](#senddata-metadata---1)
+* [.start()](#start-1)
 
 #### constructor(settings)
 
@@ -324,7 +346,7 @@ const communicator2 = new Communicator({
 - __rabbitClient__ - [RabbitClient](#rabbitclient) instance
     (if rabbitClient is passed, rabbitOptions are ignored)
     
-#### addOutputListener(fn)
+#### .addOutputListener(fn)
 
 Add callback to messages from __service's output queue__.
 
@@ -337,7 +359,7 @@ service.addOutputListener((ctx) => {
 })
 ```
 
-#### send(data, metadata = {})
+#### .send(data, metadata = {})
 
 Send message to service's __input queue__.
 
@@ -345,7 +367,7 @@ Send message to service's __input queue__.
 await service.send({ foo: 'bar' });
 ```
 
-#### start()
+#### .start()
 
 Start communicator (connect to the target service input and output channels).
 
