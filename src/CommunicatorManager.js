@@ -56,19 +56,19 @@ module.exports = class CommunicatorManager {
     }
   }
 
-  send(targetServiceName, payload) {
+  send(targetServiceName, data, metadata = {}) {
     const targetServiceCommunicator = this.communicatorMap[targetServiceName];
 
     if (!this.isCommunicatorRegistered(targetServiceName)) {
       throw new Error(`No communicator registered for service "${targetServiceName}"`);
     }
 
-    return targetServiceCommunicator.send(payload);
+    return targetServiceCommunicator.send(data, metadata);
   }
 
-  broadcast(payload) {
+  broadcast(data, metadata = {}) {
     return Promise.all(
-      Object.values(this.communicatorMap).map(communicator => communicator.send(payload)),
+      Object.values(this.communicatorMap).map(communicator => communicator.send(data, metadata)),
     );
   }
 

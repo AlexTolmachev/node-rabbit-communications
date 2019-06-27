@@ -7,6 +7,7 @@ Configure two-way communication between microservices via RabbitMQ 📥 📤
 * [Basic concepts](#basic-concepts)
 * [Usage example](#usage-example)
 * [API Reference](#api-reference)
+* [Coming soon](#coming-soon)
 
 ## Install
 
@@ -186,6 +187,7 @@ their names are in the application logs above)
 * [RabbitClient](#rabbitclient)
 * [Service](#service)
 * [Communicator](#communicator)
+* [CommunicatorManager](#communicatormanager)
 
 ---
 
@@ -367,7 +369,7 @@ you __must__ add service output listener before `communicator.start()` is called
 ```javascript
 service.addOutputListener((ctx) => {
   // your awesome service output handler goes here..
-})
+});
 ```
 
 #### .send(data, metadata = {})
@@ -386,6 +388,160 @@ Start communicator (connect to the target service input and output channels).
 await communicator.start();
 ```
 
+---
+
+## CommunicatorManager
+
+```javascript
+const { CommunicatorManager } = require('rabbit-communications');
+```
+
+* [constructor(settings)](#constructorsettings)
+* [.registerCommunicator(targetServiceName, communicatorOptions, outputListener)](#)
+* [.send(targetServiceName, data, metadata = {})](#)
+* [.broadcast(data, metadata = {})](#)
+* [.applyMiddleware(...args)](#)
+* [.addOutputListener(targetServiceName, fn)](#)
+* [.start()](#start-2)
+
+#### constructor(settings)
+
+Create CommunicatorManager instance.
+
+```javascript
+const manager1 = new CommunicatorManager({
+  namespace: 'my-namespace',
+  rabbitOptions: {
+    url: 'amqp://guest:guest@localhost:5672',
+  },
+});
+
+// or
+
+const rabbitClient = new RabbitClient('amqp://guest:guest@localhost:5672', {
+  appName: 'my-rabbit-client',
+  disableLogging: true,
+  json: true,
+});
+
+const manager2 = new CommunicatorManager({
+  namespace: 'my-namespace',
+  rabbitClient,
+});
+```
+
+_All manager’s communicators will use the same RabbitClient instance._
+
+##### Settings description:
+
+- __namespace__ - namespace in which all communicators controlled by the manager will work
+- __rabbitOptions__ - settings for connecting to RabbitMQ
+    (used if rabbitClient was not passed to the constructor)
+- __rabbitClient__ - [RabbitClient](#rabbitclient) instance
+    (if rabbitClient is passed, rabbitOptions are ignored)
+    
+#### .registerCommunicator(targetServiceName, communicatorOptions, outputListener)
+
+Create and configure communicator.
+
+_`outputListener` argument is optional, you can add
+listener method later using `addOutputListener` or not add at all if you don't need_
+
+__
+
+```javascript
+manager.registerCommunicator('my-service-1', {
+  isInputEnabled: true,
+  isOutputEnabled: false,
+});
+
+// or
+
+manager.registerCommunicator(
+  'my-service-2',
+  {
+    isInputEnabled: false,
+    isOutputEnabled: true,
+  },
+  (ctx) => {
+    // your awesome service output handler goes here..
+  },
+);
+```
+
+#### .send(targetServiceName, data, metadata = {})
+
+Send message to specific service.
+
+_Communicator for `targetServiceName` must be registered for this action_
+
+```javascript
+await manager.send('my-service-1', { foo: 'bar' });
+```
+
+#### .broadcast(data, metadata = {})
+
+Send message to all registered services.
+
+```javascript
+await manager.broadcast({ foo: 'bar' });
+```
+
+#### .applyMiddleware(...args)
+
+Apply [async koa-like](https://www.npmjs.com/package/koa#async-functions-node-v76)
+middleware functions for `outputListeners`.
+
+There are several ways to use this method:
+
+- `.applyMiddleware(func)` - single middleware for all listeners
+- `.applyMiddleware([func1, func2, func3])` - multiple middleware functions for all listeners
+- `.applyMiddleware(targetServiceName, func)` - single middleware for specific listener
+- `.applyMiddleware(targetServiceName, [func1, func2, func3])` - multiple middleware functions for specific listener
+- `.applyMiddleware([name1, name2], func)` - single middleware for several specific listeners
+- `.applyMiddleware([name1, name2], [func1, func2, func3])` - multiple middleware functions for several specific listeners
+
+```javascript
+manager.applyMiddleware(async (ctx, next) => {
+  console.time('Output listener execution time');
+  
+  await next(); // wait for all middleware chain to execute
+  
+  console.timeEnd('Output listener execution time');
+});
+
+manager.addOutputListener(async (ctx) => {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+});
+```
+
+#### .addOutputListener(targetServiceName, fn)
+
+Add output listener for specific registered communicator.
+
+```javascript
+manager.addOutputListener('my-service-1', (ctx) => {
+  // your awesome service output handler goes here..
+});
+```
+
+#### .start()
+
+Start manager and all registered communicators.
+
+```javascript
+await manager.start();
+```
+
+## Coming soon
+
+- Allow to pass custom input/output processing function
+  (not just default JSON.parse/JSON.stringify)
+- Add communicator.ask(type, data, metadata) method mapping
+  service's output messages with input messages.
+  For example, `authCommunicator.ask('login', { token: 'pih8gw1a32' })`
+- Allow to pass metadata to Service/Communicator constructor
+  to include it in every sent message. For example, specific app info or settings
 ## License
 
 MIT.
