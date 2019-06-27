@@ -3,6 +3,7 @@
 Configure two-way communication between microservices via RabbitMQ 📥 📤
 
 * [Install](#install)
+* [Test](#test)
 * [Basic concepts](#basic-concepts)
 * [Usage example](#usage-example)
 * [API Reference](#api-reference)
@@ -11,6 +12,16 @@ Configure two-way communication between microservices via RabbitMQ 📥 📤
 
 ```bash
 npm i rabbit-communications
+```
+
+## Test
+
+[See test files](./test)
+
+```bash
+$ docker run -d -p 5672:5672 rabbitmq
+$ export RABBIT_URL=amqp://guest:guest@localhost:5672
+$ npm test
 ```
 
 ## Basic concepts
