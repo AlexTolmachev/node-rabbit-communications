@@ -11,6 +11,7 @@ module.exports = class Communicator {
       rabbitClient,
       rabbitOptions,
       targetServiceName,
+      metadata = {},
       isInputEnabled = true,
       isOutputEnabled = true,
       shouldDiscardMessages = false,
@@ -39,6 +40,7 @@ module.exports = class Communicator {
       throw new Error('There\'s no point to set "shouldDiscardMessages" flag to "true" if service\'s output is disabled');
     }
 
+    this.metadata = metadata;
     this.namespace = namespace;
     this.rabbitClient = rabbitClient;
     this.rabbitOptions = rabbitOptions;
@@ -59,10 +61,15 @@ module.exports = class Communicator {
     this.outputListener = fn;
   }
 
-  async send(data, metadata = {}) {
+  async send(data, additionalMetadata = {}) {
     if (!this.isInputEnabled) {
       throw new Error('Service input channel is disabled, can not send message');
     }
+
+    const metadata = {
+      ...this.metadata,
+      ...additionalMetadata,
+    };
 
     const payload = {
       metadata,

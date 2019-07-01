@@ -361,4 +361,61 @@ describe('Communicator (connects to specific Service for two-way communication)'
 
     expect(areMessagesReceivedByService).to.be.equal(true);
   });
+
+  it('allows to pass custom metadata to use it in every service input message', async () => {
+    const serviceName = 'service-10';
+
+    const communicatorMetadata = {
+      num: 1,
+      boo: true,
+      str: 'foo',
+    };
+
+    const service = new Service({
+      namespace: NAMESPACE,
+      name: serviceName,
+      isOutputEnabled: false,
+      isInputEnabled: true,
+      rabbitClient,
+    });
+
+    const communicator = new Communicator({
+      namespace: NAMESPACE,
+      targetServiceName: serviceName,
+      isOutputEnabled: false,
+      isInputEnabled: true,
+      metadata: communicatorMetadata,
+      rabbitClient,
+    });
+
+    let receivedMessageMetadata;
+
+    service.addInputListener((ctx) => {
+      receivedMessageMetadata = ctx.metadata;
+    });
+
+    await service.start();
+    await communicator.start();
+
+    createdQueues.push(service.inputQueueName);
+
+    communicator.send({ foo: 'bar' });
+
+    await new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => reject(), 2e3);
+
+      const intervalId = setInterval(() => {
+        if (!receivedMessageMetadata) {
+          return;
+        }
+
+        clearTimeout(timeoutId);
+        clearInterval(intervalId);
+
+        resolve();
+      }, 100);
+    });
+
+    expect(receivedMessageMetadata).to.be.eql(communicatorMetadata);
+  });
 });

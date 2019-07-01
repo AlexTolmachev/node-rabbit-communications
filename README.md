@@ -270,6 +270,8 @@ const service2 = new Service({
     them back to the input queue if an error occurred during its processing
 - __metadata__ - object, that would be sent with every output message
     and could be accessed via `ctx.metadata` in listener
+- __metadata__ - object, that would be sent with every service input message
+    and could be accessed via `ctx.metadata` in listener
 - __rabbitOptions__ - settings for connecting to RabbitMQ
     (used if rabbitClient was not passed to the constructor)
 - __rabbitClient__ - [RabbitClient](#rabbitclient) instance
@@ -328,6 +330,9 @@ const communicator1 = new Communicator({
   isOutputEnabled: true,
   isInputEnabled: true,
   shouldDiscardMessages: false,
+  metadata: {
+    foo: 'bar',
+  },
   rabbitOptions: {
     url: 'amqp://guest:guest@localhost:5672',
   },
@@ -347,6 +352,9 @@ const communicator2 = new Communicator({
   isOutputEnabled: true,
   isInputEnabled: true,
   shouldDiscardMessages: false,
+  metadata: {
+    foo: 'bar',
+  },
   rabbitClient,
 });
 ```
