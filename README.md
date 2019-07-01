@@ -556,8 +556,6 @@ await manager.start();
 - Add communicator.ask(type, data, metadata) method mapping
   service's output messages with input messages.
   For example, `authCommunicator.ask('login', { token: 'pih8gw1a32' })`
-- Allow to pass metadata to Service/Communicator constructor
-  to include it in every sent message. For example, specific app info or settings
 - Add JSDoc or TS-typings
 
 ## License
