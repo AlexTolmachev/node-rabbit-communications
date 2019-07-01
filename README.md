@@ -332,6 +332,7 @@ const { Communicator } = require('rabbit-communications');
 * [constructor(settings)](#constructorsettings-1)
 * [.addOutputListener(fn)](#addoutputlistenerfn)
 * [.send(data, metadata = {})](#senddata-metadata---1)
+* [.ask(subject, data, metadata = {})](#asksubject-data-metadata--)
 * [.start()](#start-1)
 
 #### constructor(settings)
