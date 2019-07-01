@@ -1,5 +1,7 @@
+const nanoid = require('nanoid');
 const RabbitClient = require('rabbit-client');
 const ListenerContext = require('./ListenerContext');
+const { ControllablePromise } = require('./utils');
 
 module.exports = class Communicator {
   constructor(settings) {
@@ -12,6 +14,8 @@ module.exports = class Communicator {
       rabbitOptions,
       targetServiceName,
       metadata = {},
+      useAsk = false,
+      askTimeout = 5e3,
       isInputEnabled = true,
       isOutputEnabled = true,
       shouldDiscardMessages = false,
@@ -40,17 +44,21 @@ module.exports = class Communicator {
       throw new Error('There\'s no point to set "shouldDiscardMessages" flag to "true" if service\'s output is disabled');
     }
 
+    this.useAsk = useAsk;
     this.metadata = metadata;
     this.namespace = namespace;
+    this.askTimeout = askTimeout;
     this.rabbitClient = rabbitClient;
     this.rabbitOptions = rabbitOptions;
-    this.isInputEnabled = isInputEnabled;
-    this.isOutputEnabled = isOutputEnabled;
     this.targetServiceName = targetServiceName;
+    this.isInputEnabled = useAsk || isInputEnabled;
+    this.isOutputEnabled = useAsk || isOutputEnabled;
     this.shouldDiscardMessages = shouldDiscardMessages;
 
     this.inputQueueName = `${namespace}:${this.targetServiceName}:input`;
     this.outputQueueName = `${namespace}:${this.targetServiceName}:output`;
+
+    this.askMap = {}; // messageId -> ControllablePromise instance (see utils)
   }
 
   addOutputListener(fn) {
@@ -66,9 +74,12 @@ module.exports = class Communicator {
       throw new Error('Service input channel is disabled, can not send message');
     }
 
+    const messageId = nanoid(10);
+
     const metadata = {
       ...this.metadata,
       ...additionalMetadata,
+      messageId,
     };
 
     const payload = {
@@ -76,7 +87,29 @@ module.exports = class Communicator {
       data,
     };
 
-    return this.inputChannel.publish(this.namespace, this.inputQueueName, payload);
+    await this.inputChannel.publish(this.namespace, this.inputQueueName, payload);
+
+    return messageId;
+  }
+
+  async ask(subject, data, additionalMetadata = {}) {
+    const controllablePromise = new ControllablePromise();
+
+    const messageId = await this.send(data, {
+      ...additionalMetadata,
+      ask: true,
+      subject,
+    });
+
+    controllablePromise.setResolveTimeout(
+      this.askTimeout,
+      `The service did not respond within the allowed ${this.askTimeout} milliseconds`,
+    );
+
+    // To see the use of this object see the consume callback below in start() method
+    this.askMap[messageId] = controllablePromise;
+
+    return controllablePromise;
   }
 
   async start() {
@@ -99,7 +132,7 @@ module.exports = class Communicator {
     }
 
     if (this.isOutputEnabled) {
-      if (typeof this.outputListener !== 'function') {
+      if (typeof this.outputListener !== 'function' && !this.useAsk) {
         throw new Error('Service output is enabled but no listener is provided');
       }
 
@@ -114,6 +147,14 @@ module.exports = class Communicator {
           await channel.consume(this.outputQueueName, async (msg, ch, parsedMessage) => {
             try {
               const { data, metadata } = parsedMessage;
+
+              if (metadata.isReplyTo !== undefined) {
+                this.askMap[metadata.isReplyTo].resolve(parsedMessage);
+
+                delete this.askMap[metadata.isReplyTo];
+
+                return;
+              }
 
               const ctx = new ListenerContext({
                 communicator: this,

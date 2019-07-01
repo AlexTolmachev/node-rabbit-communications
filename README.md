@@ -214,6 +214,7 @@ const { Service } = require('rabbit-communications');
 
 * [constructor(settings)](#constructorsettings)
 * [.addInputListener(fn)](#addinputlistenerfn)
+* [.addAskListener(subject, fn)](#addasklistenersubject-fn)
 * [.send(data, metadata = {})](#senddata-metadata--)
 * [.start()](#start)
 
@@ -290,6 +291,20 @@ service.addInputListener((ctx) => {
 })
 ```
 
+#### .addAskListener(subject, fn)
+
+Add [ask](#asksubject-data-metadata--) callback
+
+_For this to work you need to enable both input and output channels_
+
+```javascript
+service.addAskListener('echo', async (ctx) => {
+  // your awesome ask handler goes here, for example:
+  
+  await ctx.reply(ctx.data);
+});
+```
+
 #### .send(data, metadata = {})
 
 Send message to __output queue__.
@@ -327,6 +342,8 @@ Create Service instance.
 const communicator1 = new Communicator({
   namespace: 'my-namespace',
   targetServiceName: 'my-service-1',
+  useAsk: false,
+  askTimeout: 5e3,
   isOutputEnabled: true,
   isInputEnabled: true,
   shouldDiscardMessages: false,
@@ -349,6 +366,8 @@ const rabbitClient = new RabbitClient('amqp://guest:guest@localhost:5672', {
 const communicator2 = new Communicator({
   namespace: 'my-namespace',
   targetServiceName: 'my-service-1',
+  useAsk: false,
+  askTimeout: 5e3,
   isOutputEnabled: true,
   isInputEnabled: true,
   shouldDiscardMessages: false,
@@ -366,6 +385,10 @@ const communicator2 = new Communicator({
     for example, `namespace "shop" -> service "accounts"`
     and `namespace "social" -> service "accounts"`
 - __targetServiceName__ - name of the service to which communicator will be connected
+- __useAsk__ - set it to true if you want to use [ask](#asksubject-data-metadata--) method,
+    this will enable both input and output channels automatically
+- __askTimeout__ - the number of milliseconds for which the service will have
+    to respond when using the [ask](#asksubject-data-metadata--) method
 - __isOutputEnabled__ - whether the communicator should listen service's output queue
 - __isInputEnabled__ - will the communicator send messages to service's input queue
 - __shouldDiscardMessages__ - whether the communicator should delete messages instead of returning
@@ -394,6 +417,15 @@ Send message to service's __input queue__.
 
 ```javascript
 await service.send({ foo: 'bar' });
+```
+
+#### .ask(subject, data, metadata = {})
+
+`Ask` service (receive response from
+service's [.addAskListener(subject, fn)](#addasklistenersubject-fn) callback)
+
+```javascript
+const { data, metadata } = await communicator.ask('ping', { foo: 'bar' });
 ```
 
 #### .start()

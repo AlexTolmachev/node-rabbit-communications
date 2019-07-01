@@ -16,6 +16,19 @@ module.exports = class ListenerContext {
 
     const entityInstance = service || communicator;
 
-    this.reply = entityInstance.send.bind(entityInstance);
+    if (metadata.ask) {
+      // service addAskListener callback case
+      this.reply = (replyData, additionalMetadata) => entityInstance.send.call(
+        entityInstance,
+        replyData,
+        {
+          ...additionalMetadata,
+          isReplyTo: metadata.messageId,
+        },
+      );
+    } else {
+      // regular "reply" with no mapping
+      this.reply = entityInstance.send.bind(entityInstance);
+    }
   }
 };

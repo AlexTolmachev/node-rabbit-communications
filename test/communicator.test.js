@@ -399,7 +399,7 @@ describe('Communicator (connects to specific Service for two-way communication)'
 
     createdQueues.push(service.inputQueueName);
 
-    communicator.send({ foo: 'bar' });
+    const messageId = await communicator.send({ foo: 'bar' });
 
     await new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => reject(), 2e3);
@@ -416,6 +416,55 @@ describe('Communicator (connects to specific Service for two-way communication)'
       }, 100);
     });
 
+    communicatorMetadata.messageId = messageId;
+
     expect(receivedMessageMetadata).to.be.eql(communicatorMetadata);
+  });
+
+  it('allows to "ask" service and receive message mapped to specific input message', async () => {
+    const serviceName = 'service-11';
+    const askSubject = 'echo';
+
+    const service = new Service({
+      namespace: NAMESPACE,
+      name: serviceName,
+      isOutputEnabled: true,
+      isInputEnabled: true,
+      rabbitClient,
+    });
+
+    const communicator = new Communicator({
+      namespace: NAMESPACE,
+      targetServiceName: serviceName,
+      useAsk: true,
+      shouldDiscardMessages: true,
+      rabbitClient,
+    });
+
+    const messagesToSend = new Array(1).fill(null).map(() => ({ test: Math.random() }));
+    const receivedAskResponses = [];
+
+    service.addAskListener(askSubject, (ctx) => {
+      ctx.reply(ctx.data); // echo
+    });
+
+    await service.start();
+    await communicator.start();
+
+    createdQueues.push(service.inputQueueName, service.outputQueueName);
+
+    await Promise.all(
+      messagesToSend.map(async (msg) => {
+        const response = await communicator.ask(askSubject, msg);
+
+        receivedAskResponses.push(response.data);
+      }),
+    );
+
+    const areAllResponsesReceived = messagesToSend.map(
+      item => receivedAskResponses.some(receivedItem => receivedItem.test === item.test),
+    ).every(Boolean);
+
+    expect(areAllResponsesReceived).to.be.equal(true);
   });
 });

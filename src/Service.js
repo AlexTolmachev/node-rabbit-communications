@@ -51,6 +51,8 @@ module.exports = class Service {
 
     this.inputQueueName = `${namespace}:${this.name}:input`;
     this.outputQueueName = `${namespace}:${this.name}:output`;
+
+    this.askListenersMap = {}; // subject -> function
   }
 
   addInputListener(fn) {
@@ -59,6 +61,22 @@ module.exports = class Service {
     }
 
     this.inputListener = fn;
+  }
+
+  addAskListener(subject, fn) {
+    if (!this.isInputEnabled) {
+      throw new Error('Service input channel is disabled, therefore ask listeners would never be called');
+    }
+
+
+    if (!this.isOutputEnabled) {
+      throw new Error(`
+        Service output channel is disabled, therefore ask listener
+        will not be able to reply to the incoming message
+      `);
+    }
+
+    this.askListenersMap[subject] = fn;
   }
 
   async send(data, additionalMetadata = {}) {
@@ -100,7 +118,7 @@ module.exports = class Service {
     }
 
     if (this.isInputEnabled) {
-      if (typeof this.inputListener !== 'function') {
+      if (typeof this.inputListener !== 'function' && Object.keys(this.askListenersMap).length === 0) {
         throw new Error('Service input is enabled but no listener is provided');
       }
 
@@ -121,6 +139,18 @@ module.exports = class Service {
                 metadata,
                 data,
               });
+
+              if (metadata.ask && metadata.subject !== undefined) {
+                const askListener = this.askListenersMap[metadata.subject];
+
+                if (askListener === undefined) {
+                  throw new Error(`Received ask request for subject "${metadata.subject}" but no listener registered`);
+                }
+
+                await askListener(ctx);
+
+                return;
+              }
 
               await this.inputListener(ctx);
               await ch.ack(msg);

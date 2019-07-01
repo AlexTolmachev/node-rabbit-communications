@@ -167,7 +167,11 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     createdQueues.push(service.inputQueueName);
 
     await Promise.all(
-      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, { data: msg })),
+      messagesToSend.map(msg => testChannel.publish(
+        service.namespace,
+        service.inputQueueName,
+        { data: msg, metadata: {} },
+      )),
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
@@ -276,7 +280,11 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     createdQueues.push(service.inputQueueName);
 
     await Promise.all(
-      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, { data: msg })),
+      messagesToSend.map(msg => testChannel.publish(
+        service.namespace,
+        service.inputQueueName,
+        { data: msg, metadata: {} },
+      )),
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
@@ -342,7 +350,11 @@ describe('Service (allows to exchange messages with it in both directions)', () 
     createdQueues.push(service.inputQueueName);
 
     await Promise.all(
-      messagesToSend.map(msg => testChannel.sendToQueue(service.inputQueueName, { data: msg })),
+      messagesToSend.map(msg => testChannel.publish(
+        service.namespace,
+        service.inputQueueName,
+        { data: msg, metadata: {} },
+      )),
     );
 
     const areMessagesReceivedByService = await new Promise((resolve) => {
@@ -387,7 +399,7 @@ describe('Service (allows to exchange messages with it in both directions)', () 
 
     await service.start();
 
-    const { inputQueueName, outputQueueName } = service;
+    const { namespace, inputQueueName, outputQueueName } = service;
 
     createdQueues.push(inputQueueName, outputQueueName);
 
@@ -403,7 +415,11 @@ describe('Service (allows to exchange messages with it in both directions)', () 
       },
     });
 
-    await testChannel.sendToQueue(inputQueueName, { data: {} });
+    await testChannel.publish(
+      namespace,
+      inputQueueName,
+      { data: {}, metadata: {} },
+    );
 
     const isEchoMessageReceived = await new Promise((resolve) => {
       const timeoutId = setTimeout(() => resolve(false), 2e3);
