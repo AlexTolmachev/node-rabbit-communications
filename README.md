@@ -495,8 +495,6 @@ Create and configure communicator.
 _`outputListener` argument is optional, you can add
 listener method later using `addOutputListener` or not add at all if you don't need_
 
-__
-
 ```javascript
 manager.registerCommunicator('my-service-1', {
   isInputEnabled: true,
