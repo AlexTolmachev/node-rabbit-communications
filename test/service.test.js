@@ -420,4 +420,57 @@ describe('Service (allows to exchange messages with it in both directions)', () 
 
     expect(isEchoMessageReceived).to.be.equal(true);
   });
+
+  it('allows to pass custom metadata to use it in every output message', async () => {
+    const serviceMetadata = {
+      num: 1,
+      boo: true,
+      str: 'foo',
+    };
+
+    const service = new Service({
+      name: 'service-9-output-only',
+      isOutputEnabled: true,
+      isInputEnabled: false,
+      namespace: NAMESPACE,
+      metadata: serviceMetadata,
+      rabbitClient,
+    });
+
+    const { outputQueueName } = service;
+
+    await service.start();
+
+    createdQueues.push(outputQueueName);
+
+    let receivedMessageMetadata;
+
+    await rabbitClient.getChannel({
+      onReconnect: async (channel) => {
+        channel.consume(outputQueueName, async (msg, ch, parsedMessage) => {
+          receivedMessageMetadata = parsedMessage.metadata;
+          await ch.ack(msg);
+        });
+      },
+    });
+
+    await service.send({ foo: 'bar' });
+
+    await new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => reject(), 2e3);
+
+      const intervalId = setInterval(() => {
+        if (!receivedMessageMetadata) {
+          return;
+        }
+
+        clearTimeout(timeoutId);
+        clearInterval(intervalId);
+
+        resolve();
+      }, 100);
+    });
+
+    expect(receivedMessageMetadata).to.be.eql(serviceMetadata);
+  });
 });

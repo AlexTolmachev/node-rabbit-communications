@@ -11,6 +11,7 @@ module.exports = class Service {
       name,
       rabbitClient,
       rabbitOptions,
+      metadata = {},
       isInputEnabled = true,
       isOutputEnabled = true,
       shouldDiscardMessages = false,
@@ -40,6 +41,7 @@ module.exports = class Service {
     }
 
     this.name = name;
+    this.metadata = metadata;
     this.namespace = namespace;
     this.rabbitClient = rabbitClient;
     this.rabbitOptions = rabbitOptions;
@@ -59,10 +61,15 @@ module.exports = class Service {
     this.inputListener = fn;
   }
 
-  async send(data, metadata = {}) {
+  async send(data, additionalMetadata = {}) {
     if (!this.isOutputEnabled) {
       throw new Error('Service output channel is disabled, can not send message');
     }
+
+    const metadata = {
+      ...this.metadata,
+      ...additionalMetadata,
+    };
 
     const payload = {
       metadata,
