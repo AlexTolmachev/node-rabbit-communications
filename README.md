@@ -52,13 +52,13 @@ using __Services__ and __Communicators__, there's a pair of examples:
 
 For cases when you have a main application that interacts
 with many services at the same time,
-there is a __CommunicatorManager__ in `rabbit-communications`,
+there is a __CommunicationsManager__ in `rabbit-communications`,
 which manages __pool of Communicators__ and provides helpful features
 like outputListener's middleware, RabbitMQ connection sharing and other cool features.
 
 Here is a diagram of the service architecture using the manager:
 
-![CommunicatorManager example](./assets/4.png)
+![CommunicationsManager example](./assets/4.png)
 
 ## Usage example
 
@@ -187,7 +187,7 @@ their names are in the application logs above)
 * [RabbitClient](#rabbitclient)
 * [Service](#service)
 * [Communicator](#communicator)
-* [CommunicatorManager](#communicatormanager)
+* [CommunicationsManager](#communicationsmanager)
 
 ---
 
@@ -201,7 +201,7 @@ const { RabbitClient } = require('rabbit-communications');
 class from [rabbit-client](https://www.npmjs.com/package/rabbit-client) npm package.
 Documentation and usage examples can be found on the it's npm page.
 
-You can pass RabbitClient instance to Service, Communicator and CommunicatorManager constructors,
+You can pass RabbitClient instance to Service, Communicator and CommunicationsManager constructors,
 if you don't, RabbitClient will be created under the hood (configured from rabbitOptions)
 
 ---
@@ -439,10 +439,10 @@ await communicator.start();
 
 ---
 
-## CommunicatorManager
+## CommunicationsManager
 
 ```javascript
-const { CommunicatorManager } = require('rabbit-communications');
+const { CommunicationsManager } = require('rabbit-communications');
 ```
 
 * [constructor(settings)](#constructorsettings-2)
@@ -455,10 +455,10 @@ const { CommunicatorManager } = require('rabbit-communications');
 
 #### constructor(settings)
 
-Create CommunicatorManager instance.
+Create CommunicationsManager instance.
 
 ```javascript
-const manager1 = new CommunicatorManager({
+const manager1 = new CommunicationsManager({
   namespace: 'my-namespace',
   rabbitOptions: {
     url: 'amqp://guest:guest@localhost:5672',
@@ -473,7 +473,7 @@ const rabbitClient = new RabbitClient('amqp://guest:guest@localhost:5672', {
   json: true,
 });
 
-const manager2 = new CommunicatorManager({
+const manager2 = new CommunicationsManager({
   namespace: 'my-namespace',
   rabbitClient,
 });

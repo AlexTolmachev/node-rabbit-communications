@@ -1,9 +1,9 @@
 const { expect } = require('chai');
-const { Service, CommunicatorManager, RabbitClient } = require('../src');
+const { Service, CommunicationsManager, RabbitClient } = require('../src');
 
 const { RABBIT_URL } = process.env;
 
-describe('CommunicatorManager (manages a pool of Communicators to interact with multiple services simultaneously. Core gateway functionality)', () => {
+describe('CommunicationsManager (manages a pool of Communicators to interact with multiple services simultaneously. Core gateway functionality)', () => {
   const NAMESPACE = 'namespace-3';
 
   const rabbitClient = new RabbitClient(RABBIT_URL, {
@@ -26,7 +26,7 @@ describe('CommunicatorManager (manages a pool of Communicators to interact with 
   });
 
   it('registers multiple communicators', async () => {
-    const manager = new CommunicatorManager({
+    const manager = new CommunicationsManager({
       namespace: NAMESPACE,
       rabbitClient,
     });
@@ -69,7 +69,7 @@ describe('CommunicatorManager (manages a pool of Communicators to interact with 
   it('allows to apply async (koa-style) middleware for all incoming messages', async () => {
     const serviceName = 'service-3';
 
-    const manager = new CommunicatorManager({
+    const manager = new CommunicationsManager({
       namespace: NAMESPACE,
       rabbitClient,
     });
@@ -212,7 +212,7 @@ describe('CommunicatorManager (manages a pool of Communicators to interact with 
       rabbitClient,
     });
 
-    const manager = new CommunicatorManager({
+    const manager = new CommunicationsManager({
       namespace: NAMESPACE,
       rabbitClient,
     });
@@ -282,7 +282,7 @@ describe('CommunicatorManager (manages a pool of Communicators to interact with 
       rabbitClient,
     });
 
-    const manager = new CommunicatorManager({
+    const manager = new CommunicationsManager({
       namespace: NAMESPACE,
       rabbitClient,
     });

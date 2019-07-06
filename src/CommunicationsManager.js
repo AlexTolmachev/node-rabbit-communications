@@ -1,10 +1,10 @@
 const RabbitClient = require('rabbit-client');
 const Communicator = require('./Communicator');
 
-module.exports = class CommunicatorManager {
+module.exports = class CommunicationsManager {
   constructor(settings) {
     if (!settings) {
-      throw new Error('No settings passed to the CommunicatorManager constructor');
+      throw new Error('No settings passed to the CommunicationsManager constructor');
     }
 
     const {

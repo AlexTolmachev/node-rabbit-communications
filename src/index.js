@@ -1,11 +1,11 @@
 const RabbitClient = require('rabbit-client');
-const CommunicatorManager = require('./CommunicatorManager');
+const CommunicationsManager = require('./CommunicationsManager');
 const Communicator = require('./Communicator');
 const Service = require('./Service');
 
 module.exports = {
   RabbitClient,
-  CommunicatorManager,
+  CommunicationsManager,
   Communicator,
   Service,
 };
