@@ -5,6 +5,7 @@ module.exports = class ListenerContext {
     communicator,
     metadata,
     service,
+    manager,
     data,
   }) {
     this.communicator = communicator;
@@ -12,6 +13,7 @@ module.exports = class ListenerContext {
     this.channel = rabbitChannel;
     this.metadata = metadata;
     this.service = service;
+    this.manager = manager;
     this.data = data;
 
     const entityInstance = service || communicator;

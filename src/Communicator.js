@@ -10,6 +10,7 @@ module.exports = class Communicator {
     }
 
     const {
+      manager,
       rabbitClient,
       rabbitOptions,
       targetServiceName,
@@ -45,6 +46,7 @@ module.exports = class Communicator {
     }
 
     this.useAsk = useAsk;
+    this.manager = manager;
     this.metadata = metadata;
     this.namespace = namespace;
     this.askTimeout = askTimeout;
@@ -161,6 +163,7 @@ module.exports = class Communicator {
                   communicator: this,
                   rabbitMessage: msg,
                   rabbitChannel: ch,
+                  manager: this,
                   metadata,
                   data,
                 });

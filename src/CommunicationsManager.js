@@ -50,6 +50,7 @@ module.exports = class CommunicationsManager {
       ...communicatorOptions,
       rabbitClient: this.rabbitClient,
       namespace: this.namespace,
+      manager: this,
       targetServiceName,
     });
 
