@@ -160,10 +160,10 @@ module.exports = class Communicator {
                 delete this.askMap[metadata.isReplyTo];
               } else {
                 const ctx = new ListenerContext({
+                  manager: this.manager,
                   communicator: this,
                   rabbitMessage: msg,
                   rabbitChannel: ch,
-                  manager: this,
                   metadata,
                   data,
                 });
