@@ -467,4 +467,61 @@ describe('Communicator (connects to specific Service for two-way communication)'
 
     expect(areAllResponsesReceived).to.be.equal(true);
   });
+
+  it('waits for communicator to start before sending messages', async () => {
+    const serviceName = 'service-12';
+
+    const service = new Service({
+      namespace: NAMESPACE,
+      name: serviceName,
+      isOutputEnabled: false,
+      isInputEnabled: true,
+      rabbitClient,
+    });
+
+    const communicator = new Communicator({
+      namespace: NAMESPACE,
+      targetServiceName: serviceName,
+      isInputEnabled: true,
+      isOutputEnabled: false,
+      rabbitClient,
+    });
+
+    let isMessageReceived = false;
+
+    service.addInputListener(() => {
+      isMessageReceived = true;
+    });
+
+    createdQueues.push(service.inputQueueName);
+
+    await service.start();
+
+    let sendTimestamp;
+    let startTimestamp;
+
+    communicator.send({ foo: 'bar' }).then(() => {
+      sendTimestamp = Date.now();
+    });
+
+    setTimeout(() => communicator.start().then(() => {
+      startTimestamp = Date.now();
+    }), 1000);
+
+    await new Promise((resolve) => {
+      const intervalId = setInterval(() => {
+        if (
+          isMessageReceived
+          && sendTimestamp !== undefined
+          && startTimestamp !== undefined
+        ) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(isMessageReceived).to.be.equal(true);
+    expect(sendTimestamp).to.be.greaterThan(startTimestamp);
+  });
 });

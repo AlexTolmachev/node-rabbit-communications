@@ -59,6 +59,8 @@ module.exports = class Communicator {
     this.outputQueueName = `${namespace}:${this.targetServiceName}:output`;
 
     this.askMap = {}; // messageId -> ControllablePromise instance (see utils)
+
+    this.isCommunicatorStarted = false;
   }
 
   addOutputListener(fn) {
@@ -73,6 +75,8 @@ module.exports = class Communicator {
     if (!this.isInputEnabled) {
       throw new Error('Service input channel is disabled, can not send message');
     }
+
+    await this.verifyStart();
 
     const messageId = nanoid(10);
 
@@ -152,19 +156,18 @@ module.exports = class Communicator {
                 this.askMap[metadata.isReplyTo].resolve(parsedMessage);
 
                 delete this.askMap[metadata.isReplyTo];
+              } else {
+                const ctx = new ListenerContext({
+                  communicator: this,
+                  rabbitMessage: msg,
+                  rabbitChannel: ch,
+                  metadata,
+                  data,
+                });
 
-                return;
+                await this.outputListener(ctx);
               }
 
-              const ctx = new ListenerContext({
-                communicator: this,
-                rabbitMessage: msg,
-                rabbitChannel: ch,
-                metadata,
-                data,
-              });
-
-              await this.outputListener(ctx);
               await ch.ack(msg);
             } catch (e) {
               console.error(e);
@@ -175,11 +178,30 @@ module.exports = class Communicator {
       });
     }
 
+    this.isCommunicatorStarted = true;
+
     if (process.env.NODE_ENV !== 'test') {
       console.log(`Communicator for service "${this.targetServiceName}" successfully started`);
       console.log(`﹂RabbitMQ connection url: ${this.rabbitClient.rabbitUrl}`);
       console.log(`﹂Target service's input queue name: ${this.isInputEnabled ? this.inputQueueName : 'DISABLED'}`);
       console.log(`﹂Target service's output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}\n`);
     }
+  }
+
+  async verifyStart() {
+    return new Promise((resolve) => {
+      if (this.isCommunicatorStarted) {
+        resolve();
+        return;
+      }
+
+      // wait for instance to start
+      const intervalId = setInterval(() => {
+        if (this.isCommunicatorStarted) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, 50);
+    });
   }
 };

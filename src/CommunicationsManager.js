@@ -33,6 +33,8 @@ module.exports = class CommunicationsManager {
     this.communicatorMap = {};
     this.rootMiddlewareList = [];
     this.specificMiddlewareMap = {};
+
+    this.isManagerStarted = false;
   }
 
   isCommunicatorRegistered(targetServiceName) {
@@ -56,7 +58,9 @@ module.exports = class CommunicationsManager {
     }
   }
 
-  send(targetServiceName, data, metadata = {}) {
+  async send(targetServiceName, data, metadata = {}) {
+    await this.verifyStart();
+
     const targetServiceCommunicator = this.communicatorMap[targetServiceName];
 
     if (!this.isCommunicatorRegistered(targetServiceName)) {
@@ -66,7 +70,9 @@ module.exports = class CommunicationsManager {
     return targetServiceCommunicator.send(data, metadata);
   }
 
-  broadcast(data, metadata = {}) {
+  async broadcast(data, metadata = {}) {
+    await this.verifyStart();
+
     return Promise.all(
       Object.values(this.communicatorMap).map(communicator => communicator.send(data, metadata)),
     );
@@ -103,8 +109,8 @@ module.exports = class CommunicationsManager {
     return targetServiceCommunicator.addOutputListener(fn);
   }
 
-  start() {
-    return Promise.all(
+  async start() {
+    await Promise.all(
       Object.values(this.communicatorMap).map((communicator) => {
         if (typeof communicator.outputListener === 'function') {
           const middlewareList = [
@@ -124,5 +130,24 @@ module.exports = class CommunicationsManager {
         return communicator.start();
       }),
     );
+
+    this.isManagerStarted = true;
+  }
+
+  async verifyStart() {
+    return new Promise((resolve) => {
+      if (this.isManagerStarted) {
+        resolve();
+        return;
+      }
+
+      // wait for instance to start
+      const intervalId = setInterval(() => {
+        if (this.isManagerStarted) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, 50);
+    });
   }
 };

@@ -53,6 +53,8 @@ module.exports = class Service {
     this.outputQueueName = `${namespace}:${this.name}:output`;
 
     this.askListenersMap = {}; // subject -> function
+
+    this.isServiceStarted = false;
   }
 
   addInputListener(fn) {
@@ -83,6 +85,8 @@ module.exports = class Service {
     if (!this.isOutputEnabled) {
       throw new Error('Service output channel is disabled, can not send message');
     }
+
+    await this.verifyStart();
 
     const metadata = {
       ...this.metadata,
@@ -148,11 +152,10 @@ module.exports = class Service {
                 }
 
                 await askListener(ctx);
-
-                return;
+              } else {
+                await this.inputListener(ctx);
               }
 
-              await this.inputListener(ctx);
               await ch.ack(msg);
             } catch (e) {
               console.error(e);
@@ -163,11 +166,30 @@ module.exports = class Service {
       });
     }
 
+    this.isServiceStarted = true;
+
     if (process.env.NODE_ENV !== 'test') {
       console.log(`Service "${this.name}" successfully started`);
       console.log(`﹂RabbitMQ connection url: ${this.rabbitClient.rabbitUrl}`);
       console.log(`﹂Input queue name: ${this.isInputEnabled ? this.inputQueueName : 'DISABLED'}`);
       console.log(`﹂Output queue name: ${this.isOutputEnabled ? this.outputQueueName : 'DISABLED'}\n`);
     }
+  }
+
+  async verifyStart() {
+    return new Promise((resolve) => {
+      if (this.isServiceStarted) {
+        resolve();
+        return;
+      }
+
+      // wait for instance to start
+      const intervalId = setInterval(() => {
+        if (this.isServiceStarted) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, 50);
+    });
   }
 };
