@@ -337,7 +337,7 @@ const { Communicator } = require('rabbit-communications');
 
 #### constructor(settings)
 
-Create Service instance.
+Create Communicator instance.
 
 ```javascript
 const communicator1 = new Communicator({
@@ -448,6 +448,7 @@ const { CommunicationsManager } = require('rabbit-communications');
 * [constructor(settings)](#constructorsettings-2)
 * [.registerCommunicator(targetServiceName, communicatorOptions, outputListener)](#registercommunicatortargetservicename-communicatoroptions-outputlistener)
 * [.send(targetServiceName, data, metadata = {})](#sendtargetservicename-data-metadata--)
+* [.ask(targetServiceName, subject, data, metadata = {})](#asktargetservicename-subject-data-metadata--)
 * [.broadcast(data, metadata = {})](#broadcastdata-metadata--)
 * [.applyMiddleware(...args)](#applymiddlewareargs)
 * [.addOutputListener(targetServiceName, fn)](#addoutputlistenertargetservicename-fn)
@@ -525,6 +526,11 @@ _Communicator for `targetServiceName` must be registered for this action_
 ```javascript
 await manager.send('my-service-1', { foo: 'bar' });
 ```
+
+#### .ask(targetServiceName, subject, data, metadata = {})
+
+`Ask` service (receive response from
+service's [.addAskListener(subject, fn)](#addasklistenersubject-fn) callback)
 
 #### .broadcast(data, metadata = {})
 

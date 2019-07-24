@@ -59,23 +59,33 @@ module.exports = class CommunicationsManager {
     }
   }
 
-  async send(targetServiceName, data, metadata = {}) {
-    await this.verifyStart();
-
-    const targetServiceCommunicator = this.communicatorMap[targetServiceName];
-
+  getCommunicator(targetServiceName) {
     if (!this.isCommunicatorRegistered(targetServiceName)) {
       throw new Error(`No communicator registered for service "${targetServiceName}"`);
     }
 
-    return targetServiceCommunicator.send(data, metadata);
+    return this.communicatorMap[targetServiceName];
+  }
+
+  async send(targetServiceName, data, additionalMetadata = {}) {
+    await this.verifyStart();
+
+    return this.getCommunicator(targetServiceName).send(data, additionalMetadata);
+  }
+
+  async ask(targetServiceName, subject, data, additionalMetadata = {}) {
+    await this.verifyStart();
+
+    return this.getCommunicator(targetServiceName).ask(subject, data, additionalMetadata);
   }
 
   async broadcast(data, metadata = {}) {
     await this.verifyStart();
 
     return Promise.all(
-      Object.values(this.communicatorMap).map(communicator => communicator.send(data, metadata)),
+      Object.values(this.communicatorMap).map(
+        communicator => communicator.send(data, metadata),
+      ),
     );
   }
 
@@ -101,13 +111,7 @@ module.exports = class CommunicationsManager {
   }
 
   addOutputListener(targetServiceName, fn) {
-    const targetServiceCommunicator = this.communicatorMap[targetServiceName];
-
-    if (!this.isCommunicatorRegistered(targetServiceName)) {
-      throw new Error(`No communicator registered for service "${targetServiceName}"`);
-    }
-
-    return targetServiceCommunicator.addOutputListener(fn);
+    return this.getCommunicator(targetServiceName).addOutputListener(fn);
   }
 
   async start() {
