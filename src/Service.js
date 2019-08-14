@@ -10,6 +10,7 @@ module.exports = class Service {
     const {
       name,
       rabbitClient,
+      inputPrefetch = 1,
       rabbitOptions,
       metadata = {},
       isInputEnabled = true,
@@ -44,6 +45,7 @@ module.exports = class Service {
     this.metadata = metadata;
     this.namespace = namespace;
     this.rabbitClient = rabbitClient;
+    this.inputPrefetch = inputPrefetch;
     this.rabbitOptions = rabbitOptions;
     this.isInputEnabled = isInputEnabled;
     this.isOutputEnabled = isOutputEnabled;
@@ -131,6 +133,7 @@ module.exports = class Service {
           await channel.assertExchange(this.namespace, 'direct');
           await channel.assertQueue(this.inputQueueName);
           await channel.bindQueue(this.inputQueueName, this.namespace, this.inputQueueName);
+          await channel.prefetch(this.inputPrefetch);
 
           await channel.consume(this.inputQueueName, async (msg, ch, parsedMessage) => {
             try {

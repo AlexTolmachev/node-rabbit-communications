@@ -13,6 +13,7 @@ module.exports = class Communicator {
       manager,
       rabbitClient,
       rabbitOptions,
+      outputPrefetch = 1,
       targetServiceName,
       metadata = {},
       useAsk = false,
@@ -52,6 +53,7 @@ module.exports = class Communicator {
     this.askTimeout = askTimeout;
     this.rabbitClient = rabbitClient;
     this.rabbitOptions = rabbitOptions;
+    this.outputPrefetch = outputPrefetch;
     this.targetServiceName = targetServiceName;
     this.isInputEnabled = useAsk || isInputEnabled;
     this.isOutputEnabled = useAsk || isOutputEnabled;
@@ -145,10 +147,9 @@ module.exports = class Communicator {
       this.outputChannel = await this.rabbitClient.getChannel({
         onReconnect: async (channel) => {
           await channel.assertExchange(this.namespace, 'direct');
-
           await channel.assertQueue(this.outputQueueName);
-
           await channel.bindQueue(this.outputQueueName, this.namespace, this.outputQueueName);
+          await channel.prefetch(this.outputPrefetch);
 
           await channel.consume(this.outputQueueName, async (msg, ch, parsedMessage) => {
             try {
