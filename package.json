@@ -38,7 +38,7 @@
     "mocha": "^6.1.4"
   },
   "dependencies": {
-    "nanoid": "^2.0.3",
+    "nanoid": "^3.1.31",
     "rabbit-client": "^1.1.5"
   }
 }
